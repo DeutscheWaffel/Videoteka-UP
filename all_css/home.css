@@ -179,6 +179,44 @@ body {
 .movie-card:hover {
     transform: scale(1.05);
 }
+/* Нижняя панель: сортировка + меню в одной строке */
+.bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 48px 5px;
+    
+    z-index: 100;
+    box-sizing: border-box;
+}
+
+/* Сортировка слева */
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+    font-size: 14px;
+}
+
+.sort-controls span {
+    white-space: nowrap;
+}
+
+#sortSelect {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    background: #333;
+    color: white;
+    font-size: 14px;
+    min-width: 100px; /* фиксированная ширина для единообразия */
+}
+
 
 /* Фиксированное меню внизу */
 .menu-buttons {
