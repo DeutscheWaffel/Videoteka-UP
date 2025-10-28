@@ -14,7 +14,16 @@
             <h2 class="section-title">Рекомендуем посмотреть</h2>
             <!-- 4 случайных фильма будут загружены динамически -->
         </div>
-    </div>
+    <div class="bottom-bar">
+        <div class="sort-controls">
+            <label>Сортировать по:
+                <select id="sortSelect">
+                    <option value="title">Названию</option>
+                    <option value="author">Режиссёру</option>
+                    <option value="price">Цене</option>
+                </select>
+            </label>
+        </div>
         <div class="menu-buttons">
             <button class="menu-btn" onclick="location.href='home.html'">Главная 🏠</button>
             <button class="menu-btn" onclick="location.href='catalog.html'">Каталог 📒</button>
