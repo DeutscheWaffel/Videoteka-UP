@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Каталог</title>
+    <link rel="stylesheet" href="/all_css/catalog.css">
+</head>
+<body>
+    <div id="mainPage" class="container">
+        <!-- Админ панель (показывается только для админов) -->
+        <div id="adminPanel" style="display: none; position: fixed; top: 50%; right: 20px; transform: translateY(-50%); padding: 20px; background: #1a1a1a; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 100; min-width: 200px;">
+            <h2 style="margin-top: 0; color: #ffffff; text-align: center; font-size: 18px;">Админ панель</h2>
+            <button id="addMovieBtn" style="padding: 10px 20px; background: #333333; color: #ffffff; border: 1px solid #555555; border-radius: 5px; cursor: pointer; font-size: 14px; width: 100%; transition: all 0.3s;">
+                Добавить фильм
+            </button>
+        </div>
+        <style>
+            #addMovieBtn:hover {
+                background: #444444 !important;
+                border-color: #666666 !important;
+            }
+        </style>
+
+        <!-- Модальное окно для добавления фильма -->
+        <div id="addMovieModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000;">
+            <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #1a1a1a; padding: 30px; border-radius: 10px; width: 90%; max-width: 500px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+                <h2 style="color: #ffffff; margin-top: 0;">Добавить фильм</h2>
+                <form id="addMovieForm">
+                    <label style="display: block; margin-bottom: 5px; color: #cccccc;">Название (English):</label>
+                    <input type="text" id="movieTitle" required style="width: 100%; padding: 8px; margin-bottom: 15px; border: 1px solid #555555; border-radius: 5px; background: #2a2a2a; color: #ffffff;"><br>
+                    
+                    <label style="display: block; margin-bottom: 5px; color: #cccccc;">Название (Russian):</label>
+                    <input type="text" id="movieTitleRu" style="width: 100%; padding: 8px; margin-bottom: 15px; border: 1px solid #555555; border-radius: 5px; background: #2a2a2a; color: #ffffff;"><br>
+                    
+                    <label style="display: block; margin-bottom: 5px; color: #cccccc;">Автор:</label>
+                    <input type="text" id="movieAuthor" style="width: 100%; padding: 8px; margin-bottom: 15px; border: 1px solid #555555; border-radius: 5px; background: #2a2a2a; color: #ffffff;"><br>
+                    
+                    <label style="display: block; margin-bottom: 5px; color: #cccccc;">Цена:</label>
+                    <input type="text" id="moviePrice" style="width: 100%; padding: 8px; margin-bottom: 15px; border: 1px solid #555555; border-radius: 5px; background: #2a2a2a; color: #ffffff;"><br>
+                    
+                    <label style="display: block; margin-bottom: 5px; color: #cccccc;">Жанр:</label>
+                    <select id="movieGenre" required style="width: 100%; padding: 8px; margin-bottom: 15px; border: 1px solid #555555; border-radius: 5px; background: #2a2a2a; color: #ffffff;">
+                        <option value="action">Боевик</option>
+                        <option value="comedy">Комедия</option>
+                        <option value="scifi">Фантастика</option>
+                        <option value="drama">Драма</option>
+                        <option value="horror">Ужасы</option>
+                        <option value="fantasy">Фэнтези</option>
+                    </select><br>
+                    
+                    <label style="display: block; margin-bottom: 5px; color: #cccccc;">Постер (изображение):</label>
+                    <input type="file" id="moviePoster" accept="image/*" style="width: 100%; padding: 8px; margin-bottom: 15px; border: 1px solid #555555; border-radius: 5px; background: #2a2a2a; color: #ffffff;"><br>
+                    
+                    <div style="text-align: right; margin-top: 20px;">
+                        <button type="button" id="cancelAddMovie" style="padding: 10px 20px; background: #555555; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+                            Отмена
+                        </button>
+                        <button type="submit" style="padding: 10px 20px; background: #333333; color: white; border: 1px solid #666666; border-radius: 5px; cursor: pointer;">
+                            Добавить
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Список жанров -->
+        <div id="genreList" class="genre-list">
+            <div class="genre-item genre-action" onclick="location.href='genre-action.html'">Боевик</div>
+            <div class="genre-item genre-comedy" onclick="location.href='genre-comedy.html'">Комедия</div>
+            <div class="genre-item genre-sci-fi" onclick="location.href='genre-scifi.html'">Фантастика</div>
+            <div class="genre-item genre-drama" onclick="location.href='genre-drama.html'">Драма</div>
+            <div class="genre-item genre-horror" onclick="location.href='genre-horror.html'">Ужасы</div>
+            <div class="genre-item genre-fantasy" onclick="location.href='genre-fantasy.html'">Фэнтези</div>
+        </div>
+    </div>
+    <script src="/app.js"></script>
+    <script>
+        const API_BASE = `${window.location.origin}/api/v1`;
+        const token = localStorage.getItem('token');
+        
+        // Проверяем, является ли пользователь админом
+        async function checkAdminStatus() {
+            if (!token) return;
+            try {
+                const res = await fetch(`${API_BASE}/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.role && data.role.name === 'administrator') {
+                        document.getElementById('adminPanel').style.display = 'block';
+                    }
+                }
+            } catch (e) {
+                console.error('Error checking admin status:', e);
+            }
+        }
+        
+        checkAdminStatus();
+        
+        // Обработчики для модального окна
+        document.getElementById('addMovieBtn')?.addEventListener('click', () => {
+            document.getElementById('addMovieModal').style.display = 'block';
+        });
+        
+        document.getElementById('cancelAddMovie')?.addEventListener('click', () => {
+            document.getElementById('addMovieModal').style.display = 'none';
+        });
+        
+        document.getElementById('addMovieForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const title = document.getElementById('movieTitle').value;
+            const titleRu = document.getElementById('movieTitleRu').value;
+            const author = document.getElementById('movieAuthor').value;
+            const price = document.getElementById('moviePrice').value;
+            const genre = document.getElementById('movieGenre').value;
+            const posterFile = document.getElementById('moviePoster').files[0];
+            
+            let movieBase64 = null;
+            if (posterFile) {
+                const reader = new FileReader();
+                movieBase64 = await new Promise((resolve) => {
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.readAsDataURL(posterFile);
+                });
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/admin/films`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title,
+                        title_ru: titleRu || null,
+                        author: author || null,
+                        price: price || null,
+                        genre_title: genre,
+                        movie_base64: movieBase64
+                    })
+                });
+                
+                if (res.ok) {
+                    alert('Фильм успешно добавлен!');
+                    document.getElementById('addMovieForm').reset();
+                    document.getElementById('addMovieModal').style.display = 'none';
+                } else {
+                    const error = await res.text();
+                    alert('Ошибка: ' + error);
+                }
+            } catch (err) {
+                alert('Ошибка при добавлении фильма: ' + err.message);
+            }
+        });
+    </script>
+    <div class="container">
+        <div class="menu-buttons">
+            <button class="menu-btn" onclick="location.href='home.html'">Главная 🏠</button>
+            <button class="menu-btn" onclick="location.href='catalog.html'">Каталог 📒</button>
+            <button class="menu-btn" onclick="location.href='cart.html'">Корзина 🛒</button>
+            <button class="menu-btn" onclick="location.href='bookmarks.html'">Закладки 🔖</button>
+            <button class="menu-btn" onclick="location.href='profile.html'">Профиль 🚹</button>
+        </div>
+    </div>
+</body>
+</html>

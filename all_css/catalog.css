@@ -1,0 +1,222 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-image: url('/images/background_home.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    color: white;
+    position: relative;
+}
+
+.genre-list {
+    display: flex; /* ← Показываем список */
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.genre-item {
+    padding: 30px 40px;
+    margin: 5px 0;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 80%;
+    text-align: center;
+    transition: background-color 0.2s; /* ← Только цвет */
+    position: relative;
+    background-size: cover;
+    background-position: center;
+    background-blend-mode: overlay;
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+}
+
+.genre-item:hover {
+    background-color: rgba(255, 255, 255, 0.3); /* ← Только цвет, не трогаем фон */
+}
+
+.genre-action {
+    background-image: url('/images_for_buttons/back_boevik.jpg');
+}
+
+.genre-comedy {
+    background-image: url('/images_for_buttons/comedy_b.jpg');
+}
+
+.genre-sci-fi {
+    background-image: url('/images_for_buttons/back_fantastic.jpg');
+}
+
+.genre-drama {
+    background-image: url('/images_for_buttons/back_drama.jpg');
+}
+
+.genre-horror {
+    background-image: url('/images_for_buttons/horror_b.jpg');
+}
+
+.genre-fantasy {
+    background-image: url('/images_for_buttons/back_fantasy.jpg');
+}
+
+.movies-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 20px;
+    overflow-x: auto;
+    padding: 10px;
+    max-width: 90%;
+    margin-bottom: 20px;
+    scroll-behavior: smooth;
+    min-height: 300px;
+    padding-bottom: 20px;
+}
+
+.movie-card {
+    width: 150px;
+    min-width: 150px;
+    cursor: pointer;
+    transition: transform 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    margin-bottom: 20px;
+}
+
+.movie-card img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.movie-info {
+    text-align: center;
+    margin-top: 8px;
+    width: 100%;
+    padding: 0 5px;
+}
+
+.movie-title {
+    font-weight: bold;
+    font-size: 14px;
+    color: #fff;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.movie-author {
+    font-size: 12px;
+    color: #ccc;
+    margin: 4px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.movie-price {
+    color: #FFD700;
+    font-weight: bold;
+    font-size: 14px;
+    margin: 4px 0;
+}
+
+.movie-rating {
+    color: gold;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.movie-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-top: 5px;
+}
+
+.bookmark-cart-container {
+    display: flex;
+    gap: 8px;
+}
+
+.movie-btn {
+    padding: 8px 0;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    width: 100%;
+    font-weight: bold;
+}
+
+.buy-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.buy-btn:hover {
+    background-color: #45a049;
+}
+
+.bookmark-btn {
+    background-color: #666666;
+    color: white;
+}
+
+.bookmark-btn:hover {
+    background-color: #777777;
+}
+
+.cart-btn {
+    background-color: #FF9800;
+    color: white;
+}
+
+.cart-btn:hover {
+    background-color: #e68900;
+}
+
+.movie-card:hover {
+    transform: scale(1.05);
+}
+
+.menu-buttons {
+            display: flex;
+            gap: 20px;
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .menu-btn {
+            width: 200px;
+            padding: 12px;
+            background: linear-gradient(135deg, #433535, #000000);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(62, 62, 62, 0.6);
+        }

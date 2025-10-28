@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Драма</title>
+    <link rel="stylesheet" href="/all_css/catalog.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Драма</h1>
+        <div id="moviesGrid" class="movies-grid"></div>
+    </div>
+    <div class="container">
+        <div class="menu-buttons">
+            <button class="menu-btn" onclick="location.href='catalog.html'">Назад</button>
+            <button class="menu-btn" onclick="location.href='home.html'">Главная 🏠</button>
+            <button class="menu-btn" onclick="location.href='cart.html'">Корзина 🛒</button>
+            <button class="menu-btn" onclick="location.href='bookmarks.html'">Закладки 🔖</button>
+            <button class="menu-btn" onclick="location.href='profile.html'">Профиль 🚹</button>
+        </div>
+    </div>
+    <script src="/app.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const grid = document.getElementById('moviesGrid');
+        const token = localStorage.getItem('token');
+        let isAdmin = false;
+
+        // Проверяем, является ли пользователь админом
+        if (token) {
+            try {
+                const res = await fetch(`${window.location.origin}/api/v1/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    isAdmin = data.role && data.role.name === 'administrator';
+                }
+            } catch (e) {
+                console.error('Error checking admin status:', e);
+            }
+        }
+
+        fetch(`/api/v1/genres/drama/films`).then(r=>r.json()).then(films=>{
+            grid.innerHTML = films.map(f => `
+            <div class=\"movie-card\" data-id=\"${f.flim_id}\">
+                ${f.movie_base64 ? `<img src=\"${f.movie_base64}\" alt=\"${f.title_ru || f.title}\">` : ''}
+                <div class=\"movie-info\">
+                    <div class=\"movie-title\">${f.title_ru || f.title}</div>
+                    <div class=\"movie-author\">${f.author || ''}</div>
+                    <div class=\"movie-price\">${f.price ? `${f.price} ₽/шт` : ''}</div>
+                    <div class=\"movie-buttons\">
+                        <div class=\"bookmark-cart-container\" style=\"display: flex; gap: 10px;\">
+                            <button class=\"movie-btn bookmark-btn\" style=\"flex: 1;\">🏷️</button>
+                            <button class=\"movie-btn cart-btn\" style=\"flex: 1;\">🛒</button>
+                        </div>
+                        ${isAdmin ? `<button class=\"movie-btn delete-btn\" style=\"background: #dc3545; margin-top: 10px; width: 100%;\" onclick=\"deleteMovie(${f.flim_id})\">Удалить фильм</button>` : ''}
+                    </div>
+                </div>
+            </div>`).join('');
+        });
+    });
+
+    async function deleteMovie(filmId) {
+        if (!confirm('Вы уверены, что хотите удалить этот фильм?')) return;
+        
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`${window.location.origin}/api/v1/admin/films/${filmId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (res.ok) {
+                alert('Фильм успешно удален!');
+                location.reload();
+            } else {
+                const error = await res.text();
+                alert('Ошибка: ' + error);
+            }
+        } catch (err) {
+            alert('Ошибка при удалении фильма: ' + err.message);
+        }
+    }
+    </script>
+</body>
+</html>

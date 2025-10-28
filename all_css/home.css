@@ -1,0 +1,210 @@
+/* Глобальный сброс */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-image: url('/images/background_home.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    color: white;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Основной контейнер для двух колонок */
+.movies-container {
+    display: flex;
+    gap: 20px;
+    padding: 16px;
+    padding-bottom: 100px; /* место под меню */
+    flex: 1;
+    max-width: 100%;
+    height: calc(100vh - 100px);
+    overflow: hidden;
+}
+
+/* Левая секция - все фильмы (2/3 экрана) */
+.all-movies-section {
+    flex: 2; /* 2/3 ширины */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    overflow-y: auto;
+    min-height: 0;
+    align-content: flex-start;
+}
+
+/* Правая секция - случайные фильмы (1/3 экрана) */
+.random-movies-section {
+    flex: 1; /* 1/3 ширины */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.section-title {
+    color: white;
+    font-size: 18px;
+    margin-bottom: 10px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+/* Карточка фильма — фиксированная ширина */
+.movie-card {
+    width: 160px;      /* ширина одного постера */
+    min-width: 160px;  /* не сжимается */
+    cursor: pointer;
+    transition: transform 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 12px;
+}
+
+/* Карточки в правой секции - на всю ширину */
+
+.movie-card img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.movie-info {
+    text-align: center;
+    margin-top: 8px;
+    width: 100%;
+    padding: 0 4px;
+}
+
+.movie-title {
+    font-weight: bold;
+    font-size: 14px;
+    color: #fff;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.movie-author {
+    font-size: 12px;
+    color: #ccc;
+    margin: 4px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.movie-price {
+    color: #FFD700;
+    font-weight: bold;
+    font-size: 14px;
+    margin: 4px 0;
+}
+
+.movie-rating {
+    color: gold;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.movie-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-top: 5px;
+}
+
+.bookmark-cart-container {
+    display: flex;
+    gap: 8px;
+}
+
+.movie-btn {
+    padding: 8px 0;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    width: 100%;
+    font-weight: bold;
+}
+
+.buy-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.buy-btn:hover {
+    background-color: #45a049;
+}
+
+.bookmark-btn, .cart-btn {
+    background-color: transparent;
+    color: white;
+}
+
+.bookmark-btn:hover {
+    background-color: #be01017a;
+}
+
+.cart-btn:hover {
+    background-color: #e68a0091;
+}
+
+.movie-card:hover {
+    transform: scale(1.05);
+}
+
+/* Фиксированное меню внизу */
+.menu-buttons {
+            display: flex;
+            gap: 20px;
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .menu-btn {
+            width: 200px;
+            padding: 12px;
+            background: linear-gradient(135deg, #433535, #000000);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(62, 62, 62, 0.6);
+        }
