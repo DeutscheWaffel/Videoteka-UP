@@ -12,25 +12,22 @@ document.addEventListener('DOMContentLoaded', function () {
             target.classList.add('active');
         }
     }
-    // Делаем функцию доступной глобально для inline-обработчиков в HTML
     window.showForm = showForm;
 
-	const API_BASE = (() => {
-		// Если страница открыта как file:// — используем локальный сервер FastAPI
-		if (window.location.protocol === 'file:') {
-			return 'http://localhost:8000/api/v1';
-		}
-		// Иначе — работаем от текущего origin
-		return `${window.location.origin}/api/v1`;
-	})();
+    const API_BASE = (() => {
+        if (window.location.protocol === 'file:') {
+            return 'http://localhost:8000/api/v1';
+        }
+        return `${window.location.origin}/api/v1`;
+    })();
 
-	async function apiRequest(path, options = {}) {
-		const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
-		const token = localStorage.getItem('token');
-		if (token) {
-			headers['Authorization'] = `Bearer ${token}`;
-		}
-		const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    async function apiRequest(path, options = {}) {
+        const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+        const token = localStorage.getItem('token');
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
         const text = await res.text();
         let data;
         try { data = text ? JSON.parse(text) : {}; } catch { data = { detail: text }; }
@@ -41,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return data;
     }
 
-    // Привязываем обработчики к ссылкам
+    // --- Обработчики форм ---
     document.querySelector('.login-link a')?.addEventListener('click', function(e) {
         e.preventDefault();
         showForm('loginForm');
@@ -71,7 +68,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 method: 'POST',
                 body: JSON.stringify({ username, email, password })
             });
-            // Покажем форму логина после успешной регистрации
             errorDiv.classList.remove('show');
             errorDiv.textContent = '';
             showForm('loginForm');
@@ -103,34 +99,29 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             errorDiv.classList.remove('show');
             errorDiv.textContent = '';
-			// После входа — на главную (корень статики)
-			window.location.href = '/home.html';
+            window.location.href = '/home.html';
         } catch (err) {
             errorDiv.textContent = err.message || 'Ошибка входа';
             errorDiv.classList.add('show');
         }
     });
 
-    // --- Логика для корзины и закладок ---
+    // --- Корзина и закладки ---
     let cart = JSON.parse(localStorage.getItem('cart')) || [];
     let bookmarks = JSON.parse(localStorage.getItem('bookmarks')) || [];
 
-    // Функция для обновления localStorage
     function updateStorage() {
         localStorage.setItem('cart', JSON.stringify(cart));
         localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
     }
 
-    // --- Работа с серверными закладками ---
     async function fetchBookmarksFromServer() {
         try {
             const data = await apiRequest('/bookmarks');
-            // Конвертируем к прежнему формату для совместимости UI
             bookmarks = data.map(b => ({ id: b.movie_id, title: b.title, author: b.author || '', price: b.price || '' }));
             updateStorage();
             return bookmarks;
         } catch (e) {
-            // Если не авторизованы — молча игнорируем, оставляем локальные
             return bookmarks;
         }
     }
@@ -146,7 +137,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return apiRequest(`/bookmarks/${movieId}`, { method: 'DELETE' });
     }
 
-    // --- Работа с серверной корзиной ---
     async function fetchCartFromServer() {
         try {
             const data = await apiRequest('/cart');
@@ -169,7 +159,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return apiRequest(`/cart/${movieId}`, { method: 'DELETE' });
     }
 
-    // Функция для добавления/удаления из корзины
     async function toggleCart(movie) {
         const index = cart.findIndex(item => String(item.id) === String(movie.id));
         const button = document.querySelector(`[data-id="${movie.id}"] .cart-btn`);
@@ -192,7 +181,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Функция для добавления/удаления из закладок
     async function toggleBookmark(movie) {
         const index = bookmarks.findIndex(item => String(item.id) === String(movie.id));
         const button = document.querySelector(`[data-id="${movie.id}"] .bookmark-btn`);
@@ -215,7 +203,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // Делегирование событий для динамически загружаемых карточек
     document.body.addEventListener('click', async (e) => {
         const cartBtn = e.target.closest('.cart-btn');
         const bookmarkBtn = e.target.closest('.bookmark-btn');
@@ -237,116 +224,113 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // При загрузке страницы подтянем корзину и закладки для корректной иконки
     fetchCartFromServer();
     fetchBookmarksFromServer();
 
-    // --- Каталог жанров: переход на страницу жанра ---
+    // --- Жанры ---
     document.querySelectorAll('#genreList .genre-item').forEach(item => {
         item.addEventListener('click', function () {
             const genre = item.getAttribute('data-genre');
             if (!genre) return;
-            // Страница жанра: /genre-<name>.html
             window.location.href = `/genre-${genre}.html`;
         });
     });
 
-    // --- Загрузка фильмов на главной странице ---
+    // ==============================
+    // === СОРТИРОВКА ФИЛЬМОВ ===
+    // ==============================
+
+    // Глобальная переменная для хранения всех фильмов
+    let allFilmsCache = [];
+
+    // Функция сортировки
+    function sortFilms(films, field) {
+        return [...films].sort((a, b) => {
+            let valA = a[field] ?? '';
+            let valB = b[field] ?? '';
+
+            if (field === 'price') {
+                const numA = parseFloat(valA) || 0;
+                const numB = parseFloat(valB) || 0;
+                return numA - numB;
+            }
+
+            valA = String(valA).toLowerCase();
+            valB = String(valB).toLowerCase();
+            if (valA < valB) return -1;
+            if (valA > valB) return 1;
+            return 0;
+        });
+    }
+
+    // Загрузка фильмов
     async function loadHomeMovies() {
         const allMoviesSection = document.getElementById('allMoviesSection');
         const randomMoviesSection = document.getElementById('randomMoviesSection');
-        
         if (!allMoviesSection || !randomMoviesSection) return;
 
         try {
-            // Загружаем все фильмы
             const allFilms = await apiRequest('/films/all');
-            console.log('Загружено фильмов:', allFilms.length);
-            if (allFilms.length > 0) {
-                console.log('Пример фильма:', {
-                    title: allFilms[0].title,
-                    movie_base64: allFilms[0].movie_base64 ? `base64 данные (${allFilms[0].movie_base64.length} символов)` : 'нет'
-                });
-            }
+            allFilmsCache = allFilms; // ← сохраняем для сортировки
             renderMovies(allFilms, allMoviesSection);
 
-            // Загружаем 4 случайных фильма
             const randomFilms = await apiRequest('/films/random/4');
-            console.log('Загружено случайных фильмов:', randomFilms.length);
             renderMovies(randomFilms, randomMoviesSection);
         } catch (e) {
             console.error('Ошибка загрузки фильмов:', e);
         }
     }
 
+    // Обработчик сортировки
+    document.getElementById('sortSelect')?.addEventListener('change', (e) => {
+        const field = e.target.value;
+        const sorted = sortFilms(allFilmsCache, field);
+        renderMovies(sorted, document.getElementById('allMoviesSection'));
+    });
+
+    // --- Рендеринг фильмов ---
     function renderMovies(films, container) {
         container.innerHTML = '';
-        
+
         films.forEach(film => {
-            // Определяем изображение из БД или используем fallback
             let imageSrc;
-            
             if (film.movie_base64) {
-                // Проверяем, есть ли уже префикс data:
                 if (film.movie_base64.startsWith('data:image/')) {
                     imageSrc = film.movie_base64;
-                    console.log(`Используем base64 с префиксом для: ${film.title}`);
-                } else if (film.movie_base64.startsWith('data:')) {
-                    imageSrc = film.movie_base64;
-                    console.log(`Используем base64 data: для: ${film.title}`);
                 } else {
-                    // Добавляем префикс для base64
                     imageSrc = `data:image/jpeg;base64,${film.movie_base64}`;
-                    console.log(`Добавляем префикс base64 для: ${film.title} (длина: ${film.movie_base64.length})`);
                 }
             } else {
-                // Fallback на локальные файлы
                 imageSrc = getImagePathForFilm(film.title);
-                console.log(`Используем локальный путь для: ${film.title} -> ${imageSrc}`);
             }
-            
+
             const titleToDisplay = film.title_ru || film.title;
             const fallbackImage = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='220'%3E%3Crect fill='%23000' width='160' height='220'/%3E%3Ctext x='50%25' y='50%25' fill='white' text-anchor='middle' dominant-baseline='middle' font-size='14'%3E${encodeURIComponent(titleToDisplay)}%3C/text%3E%3C/svg%3E`;
-            
+
             const card = document.createElement('div');
             card.className = 'movie-card';
-            card.setAttribute('data-id', film.flim_id);
-            
+            // ИСПРАВЛЕНО: используем film.id (или film.flim_id, если точно так в API)
+            card.setAttribute('data-id', film.id || film.flim_id);
+
             const img = document.createElement('img');
             img.src = imageSrc;
             img.alt = titleToDisplay;
-            
-            // Двойной fallback
             img.onerror = function() {
-                console.log('Ошибка загрузки изображения для:', titleToDisplay, 'src:', imageSrc ? imageSrc.substring(0, 50) : 'null');
-                // Пробуем local file path
-                const localPath = getImagePathForFilm(film.title);
-                if (this.src !== localPath && localPath !== imageSrc) {
-                    console.log('Пробуем локальный путь:', localPath);
-                    this.src = localPath;
-                    this.onerror = function() { 
-                        console.log('Используем SVG fallback');
-                        this.src = fallbackImage; 
-                    };
-                } else {
-                    console.log('Используем SVG fallback напрямую');
-                    this.src = fallbackImage;
-                }
+                this.src = fallbackImage;
             };
-            
             card.appendChild(img);
-            
+
             const movieInfo = document.createElement('div');
             movieInfo.className = 'movie-info';
-            
+
             const title = document.createElement('div');
             title.className = 'movie-title';
             title.textContent = titleToDisplay;
-            
+
             const author = document.createElement('div');
             author.className = 'movie-author';
             author.textContent = film.author || 'Неизвестный режиссёр';
-            
+
             const price = document.createElement('div');
             price.className = 'movie-price';
             if (film.price) {
@@ -354,48 +338,44 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 price.textContent = 'Цена не указана';
             }
-            
+
             const rating = document.createElement('div');
             rating.className = 'movie-rating';
             rating.textContent = '⭐⭐⭐⭐⭐';
-            
+
             const buttons = document.createElement('div');
             buttons.className = 'movie-buttons';
-            
+
             const buyBtn = document.createElement('button');
             buyBtn.className = 'movie-btn buy-btn';
             buyBtn.textContent = 'Купить';
-            
+
             const bookmarkCartContainer = document.createElement('div');
             bookmarkCartContainer.className = 'bookmark-cart-container';
-            
+
             const bookmarkBtn = document.createElement('button');
             bookmarkBtn.className = 'movie-btn bookmark-btn';
             bookmarkBtn.textContent = '🏷️';
-            
+
             const cartBtn = document.createElement('button');
             cartBtn.className = 'movie-btn cart-btn';
             cartBtn.textContent = '🛒';
-            
+
             bookmarkCartContainer.appendChild(bookmarkBtn);
             bookmarkCartContainer.appendChild(cartBtn);
-            
-            
             buttons.appendChild(bookmarkCartContainer);
-            
+
             movieInfo.appendChild(title);
             movieInfo.appendChild(author);
             movieInfo.appendChild(price);
             movieInfo.appendChild(rating);
             movieInfo.appendChild(buttons);
-            
             card.appendChild(movieInfo);
             container.appendChild(card);
         });
     }
 
     function getImagePathForFilm(title) {
-        // Маппинг названий фильмов на пути к изображениям (абсолютные пути для FastAPI)
         const titleMapping = {
             'The Dark Knight': '/images_for_movies/the_dark_knight.jpg',
             'Gladiator': '/images_for_movies/gladiator.jpg',
@@ -413,25 +393,20 @@ document.addEventListener('DOMContentLoaded', function () {
             'The Shawshank Redemption': '/images_for_movies/the_shawshank_redemption.jpg',
             'Star Wars': '/images_for_movies/star_wars.jpg'
         };
-        
-        // Проверяем точное совпадение
+
         if (titleMapping[title]) {
             return titleMapping[title];
         }
-        
-        // Проверяем неточное совпадение (case insensitive)
         const titleLower = title.toLowerCase();
         for (const [key, value] of Object.entries(titleMapping)) {
             if (key.toLowerCase() === titleLower) {
                 return value;
             }
         }
-        
-        // Возвращаем путь по умолчанию
         return '/images_for_movies/placeholder.jpg';
     }
 
-    // Загружаем фильмы при загрузке главной страницы
+    // Запуск загрузки фильмов
     if (document.getElementById('allMoviesSection')) {
         loadHomeMovies();
     }
