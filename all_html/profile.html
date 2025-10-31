@@ -8,6 +8,7 @@
 <body>
     <div class="container">
         <div class="profile-card">
+            <button id="adminPanelBtn" class="profile-btn" style="position:absolute; right: 20px; top: 20px; width:auto; padding:8px 12px; display:none">Админ-панель</button>
             <div class="profile-header">
                 <img id="avatarImg" src="/images/eb43e2e34889c891b4f6e66f44aa0dff.jpg" alt="Аватар" class="avatar" style="cursor:pointer">
                 <input id="avatarInput" type="file" accept="image/*" style="display:none" />
@@ -116,6 +117,14 @@
                 if (data.role) {
                     const roleText = data.role.name === 'administrator' ? 'Администратор' : 'Пользователь';
                     document.getElementById('userRole').textContent = roleText;
+                    // показать кнопку админа, если он администратор
+                    if (data.role.name === 'administrator') {
+                        const btn = document.getElementById('adminPanelBtn');
+                        btn.style.display = 'inline-block';
+                        btn.addEventListener('click', () => {
+                            window.location.href = 'admin-users.html';
+                        });
+                    }
                 } else {
                     document.getElementById('userRole').textContent = 'Пользователь';
                 }

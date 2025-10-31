@@ -258,6 +258,57 @@ async def get_current_admin_user(current_user: User = Depends(get_current_active
         )
     return current_user
 
+# ------- Пользователи (админ) -------
+from typing import List as _List
+from pydantic import BaseModel as _BaseModel
+
+class RoleUpdate(_BaseModel):
+    role_name: str
+
+@router.get("/admin/users", response_model=_List[UserResponse])
+async def list_users_admin(admin: User = Depends(get_current_admin_user)):
+    users = User.select().order_by(User.id)
+    return [UserResponse.model_validate(u, from_attributes=True) for u in users]
+
+@router.put("/admin/users/{user_id}/avatar", response_model=UserResponse)
+async def admin_update_user_avatar(user_id: int, payload: AvatarUpdate, admin: User = Depends(get_current_admin_user)):
+    if not payload.avatar_base64 or len(payload.avatar_base64) > 5_000_000:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Некорректный размер изображения")
+    try:
+        user = User.get(User.id == user_id)
+    except User.DoesNotExist:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    user.avatar_base64 = payload.avatar_base64
+    user.save()
+    return UserResponse.model_validate(user, from_attributes=True)
+
+@router.put("/admin/users/{user_id}/role", response_model=UserResponse)
+async def admin_update_user_role(user_id: int, payload: RoleUpdate, admin: User = Depends(get_current_admin_user)):
+    try:
+        user = User.get(User.id == user_id)
+    except User.DoesNotExist:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    try:
+        role = Role.get(Role.name == payload.role_name)
+    except Role.DoesNotExist:
+        raise HTTPException(status_code=400, detail="Указанная роль не существует")
+    user.role = role
+    user.save()
+    return UserResponse.model_validate(user, from_attributes=True)
+
+class RoleResp(_BaseModel):
+    id: int
+    name: str
+    description: str | None = None
+
+    class Config:
+        from_attributes = True
+
+@router.get("/admin/roles", response_model=_List[RoleResp])
+async def list_roles_admin(admin: User = Depends(get_current_admin_user)):
+    roles = Role.select().order_by(Role.id)
+    return [RoleResp.model_validate(r, from_attributes=True) for r in roles]
+
 # Схемы для работы с фильмами
 class FilmCreate(BaseModel):
     title: str
