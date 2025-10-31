@@ -23,6 +23,7 @@
                     <option value="price">Цене</option>
                 </select>
             </label>
+            <button class="menu-btn menu-btn--subtle" id="downloadCatalogBtn">Скачать каталог</button>
         </div>
         <div class="menu-buttons">
             <button class="menu-btn" onclick="location.href='home.html'">Главная 🏠</button>
@@ -31,6 +32,34 @@
             <button class="menu-btn" onclick="location.href='bookmarks.html'">Закладки 🔖</button>
             <button class="menu-btn" onclick="location.href='profile.html'">Профиль 🚹</button>
         </div>
+        </div>
+    </div>
 </body>
 <script src="/app.js"></script>
+<script>
+    (function(){
+        const btn = document.getElementById('downloadCatalogBtn');
+        if(!btn) return;
+        btn.addEventListener('click', async () => {
+            try {
+                const res = await fetch(`${window.location.origin}/api/v1/catalog.docx`);
+                if(!res.ok){
+                    const t = await res.text();
+                    throw new Error(t || 'Не удалось сформировать документ');
+                }
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'catalog.docx';
+                document.body.appendChild(a);
+                a.click();
+                URL.revokeObjectURL(url);
+                a.remove();
+            } catch (e) {
+                alert(e.message || 'Ошибка скачивания');
+            }
+        });
+    })();
+</script>
 </html>

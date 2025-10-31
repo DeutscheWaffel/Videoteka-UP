@@ -188,8 +188,11 @@ body {
     display: flex;
     align-items: center;
     gap: 16px;
-    padding: 48px 5px;
-    
+    padding: 16px 12px;
+    justify-content: space-between;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     z-index: 100;
     box-sizing: border-box;
 }
@@ -197,10 +200,11 @@ body {
 /* Сортировка слева */
 .sort-controls {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 8px;
     color: white;
     font-size: 14px;
+    flex-direction: column;
 }
 
 .sort-controls span {
@@ -223,9 +227,7 @@ body {
             display: flex;
             gap: 20px;
             position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 17%;
         }
 
         .menu-btn {
@@ -246,3 +248,27 @@ body {
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(62, 62, 62, 0.6);
         }
+
+/* Более неприметная кнопка (для скачивания каталога) */
+.menu-btn--subtle {
+    /* стили, приближенные к #sortSelect */
+    background: #333;
+    color: white;
+    border: 0px solid #555;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 14px;
+    font-weight: 500;
+    text-shadow: none;
+    box-shadow: none;
+    width: auto;
+    height: auto;
+    min-width: 125px;
+    max-height: 25px;
+}
+
+.menu-btn--subtle:hover {
+    transform: none;
+    box-shadow: none;
+    background: #3a3a3a;
+}

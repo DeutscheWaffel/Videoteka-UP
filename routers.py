@@ -10,6 +10,9 @@ from auth import (
     get_current_active_user
 )
 from config import ACCESS_TOKEN_EXPIRE_MINUTES
+from fastapi.responses import StreamingResponse
+import io
+import base64
 
 router = APIRouter()
 
@@ -238,6 +241,200 @@ async def get_all_films():
     """Получить все фильмы из базы данных"""
     films = Film.select()
     return [FilmResponse.model_validate(f, from_attributes=True) for f in films]
+
+@router.get("/catalog.pdf")
+async def download_catalog_pdf():
+    """Сформировать PDF каталог со всеми фильмами и постерами"""
+    # Импортируем здесь, чтобы не ломать среду при отсутствии зависимости
+    try:
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.units import cm
+        from reportlab.lib.styles import getSampleStyleSheet
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, PageBreak
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Отсутствует зависимость reportlab: {e}")
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, title="Каталог фильмов")
+    styles = getSampleStyleSheet()
+
+    # Регистрация кириллического шрифта: пробуем проектный и системные шрифты Windows
+    from pathlib import Path as _Path
+    base_dir = _Path(__file__).resolve().parent
+    candidates = [
+        base_dir / 'fonts' / 'DejaVuSans.ttf',
+        _Path('C:/Windows/Fonts/DejaVuSans.ttf'),
+        _Path('C:/Windows/Fonts/arialuni.ttf'),     # Arial Unicode MS
+        _Path('C:/Windows/Fonts/seguisym.ttf'),     # Segoe UI Symbol
+        _Path('C:/Windows/Fonts/segoeui.ttf'),
+        _Path('C:/Windows/Fonts/arial.ttf'),
+        _Path('C:/Windows/Fonts/tahoma.ttf'),
+    ]
+    font_name = None
+    for p in candidates:
+        try:
+            if p.exists():
+                name = p.stem  # уникальное имя
+                pdfmetrics.registerFont(TTFont(name, str(p)))
+                font_name = name
+                break
+        except Exception:
+            continue
+    story = []
+
+    films = list(Film.select())
+
+    title_style = styles['Title']
+    h_style = styles['Heading2']
+    p_style = styles['BodyText']
+    if font_name:
+        title_style.fontName = font_name
+        h_style.fontName = font_name
+        p_style.fontName = font_name
+
+    story.append(Paragraph("Каталог фильмов", title_style))
+    story.append(Spacer(1, 0.5*cm))
+
+    max_img_w = 10*cm
+    max_img_h = 14*cm
+
+    def decode_data_uri(data_uri: str):
+        if not data_uri:
+            return None
+        try:
+            # Ожидаем формат data:image/...;base64,XXXX
+            if data_uri.startswith('data:') and 'base64,' in data_uri:
+                b64 = data_uri.split('base64,', 1)[1]
+            else:
+                b64 = data_uri
+            return base64.b64decode(b64)
+        except Exception:
+            return None
+
+    def sanitize(text: str) -> str:
+        if not isinstance(text, str):
+            return text
+        # Заменяем символ рубля и иные потенциально проблемные символы
+        return text.replace('₽', 'руб.')
+
+    for idx, f in enumerate(films):
+        story.append(Paragraph(sanitize(f.title_ru or f.title), h_style))
+        meta = []
+        if f.author:
+            meta.append(f"Режиссёр: {sanitize(f.author)}")
+        if f.genre_title:
+            meta.append(f"Жанр: {sanitize(f.genre_title)}")
+        if f.price:
+            meta.append(f"Цена: {sanitize(f.price)}")
+        if meta:
+            story.append(Paragraph(" | ".join(meta), p_style))
+        story.append(Spacer(1, 0.3*cm))
+
+        img_data = decode_data_uri(getattr(f, 'movie_base64', None))
+        if img_data:
+            try:
+                img = Image(io.BytesIO(img_data))
+                # Масштабируем под ограничители, сохраняя пропорции
+                iw, ih = img.wrap(0, 0)
+                scale = min(max_img_w / max(iw, 1), max_img_h / max(ih, 1))
+                img.drawWidth = iw * scale
+                img.drawHeight = ih * scale
+                story.append(img)
+                story.append(Spacer(1, 0.5*cm))
+            except Exception:
+                pass
+
+        # Разделитель между фильмами, новая страница каждые ~4 записи
+        story.append(Spacer(1, 0.5*cm))
+        if (idx + 1) % 4 == 0 and (idx + 1) != len(films):
+            story.append(PageBreak())
+
+    if not films:
+        story.append(Paragraph("В каталоге пока нет фильмов", p_style))
+
+    doc.build(story)
+    buffer.seek(0)
+    return StreamingResponse(buffer, media_type='application/pdf', headers={
+        'Content-Disposition': 'attachment; filename="catalog.pdf"'
+    })
+
+@router.get("/catalog.docx")
+async def download_catalog_docx():
+    """Сформировать DOCX каталог со всеми фильмами и постерами"""
+    try:
+        from docx import Document
+        from docx.shared import Inches, Pt
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Отсутствует зависимость python-docx: {e}")
+
+    def decode_data_uri(data_uri: str):
+        if not data_uri:
+            return None
+        try:
+            if data_uri.startswith('data:') and 'base64,' in data_uri:
+                b64 = data_uri.split('base64,', 1)[1]
+            else:
+                b64 = data_uri
+            return base64.b64decode(b64)
+        except Exception:
+            return None
+
+    def sanitize(text: str) -> str:
+        if not isinstance(text, str):
+            return text
+        return text.replace('₽', 'руб.')
+
+    films = list(Film.select())
+
+    doc = Document()
+    # Заголовок документа
+    title = doc.add_heading('Каталог фильмов', level=0)
+    # Настроим базовый шрифт на кириллику (если доступен в системе)
+    try:
+        for style_name in ['Normal', 'Heading 1', 'Heading 2', 'Title']:
+            if style_name in [s.name for s in doc.styles]:
+                style = doc.styles[style_name]
+                if style.font:
+                    style.font.name = 'Arial'
+                    style.font.size = Pt(11)
+    except Exception:
+        pass
+
+    for idx, f in enumerate(films):
+        doc.add_heading(sanitize(f.title_ru or f.title), level=2)
+        meta_parts = []
+        if f.author:
+            meta_parts.append(f"Режиссёр: {sanitize(f.author)}")
+        if f.genre_title:
+            meta_parts.append(f"Жанр: {sanitize(f.genre_title)}")
+        if f.price:
+            meta_parts.append(f"Цена: {sanitize(f.price)}")
+        if meta_parts:
+            doc.add_paragraph(' | '.join(meta_parts))
+
+        img_data = decode_data_uri(getattr(f, 'movie_base64', None))
+        if img_data:
+            try:
+                # Вставим изображение шириной ~3.5 дюйма
+                doc.add_picture(io.BytesIO(img_data), width=Inches(3.5))
+            except Exception:
+                pass
+
+        # Отступ между записями
+        doc.add_paragraph('\n')
+
+    if not films:
+        doc.add_paragraph('В каталоге пока нет фильмов')
+
+    out = io.BytesIO()
+    doc.save(out)
+    out.seek(0)
+    return StreamingResponse(out,
+        media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        headers={'Content-Disposition': 'attachment; filename="catalog.docx"'}
+    )
 
 @router.get("/films/random/{count}", response_model=List[FilmResponse])
 async def get_random_films(count: int = 4):
